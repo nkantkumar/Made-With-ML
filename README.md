@@ -70,3 +70,12 @@ answer = query_pdf_llama("doc.pdf", "Summarize this.")
 ```
 
 **Transcription** is done with **pypdf** (local text extraction). **Q&A** uses **Ollama** (Llama 3). Set `OLLAMA_HOST` in `.env` if Ollama is not on `localhost:11434`.
+
+## Postgres MCP (transactions + local Llama)
+
+The **`postgres_mcp/`** folder provides PostgreSQL transactions and **local Llama** (Ollama) to turn natural language into SQL and run it.
+
+- **Transactions:** `transaction()`, `execute()`, `execute_many()` with commit/rollback.
+- **NL → SQL:** `ask_and_run("How many users?")` uses Llama to generate SQL, then runs it in a transaction.
+
+See **`postgres_mcp/README.md`** for setup (DATABASE_URL or POSTGRES_* env) and examples.

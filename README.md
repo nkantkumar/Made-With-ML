@@ -79,3 +79,18 @@ The **`postgres_mcp/`** folder provides PostgreSQL transactions and **local Llam
 - **NL → SQL:** `ask_and_run("How many users?")` uses Llama to generate SQL, then runs it in a transaction.
 
 See **`postgres_mcp/README.md`** for setup (DATABASE_URL or POSTGRES_* env) and examples.
+
+## WhatsApp MCP (query export with Llama only)
+
+The **`whatsapp_mcp/`** folder lets you query a WhatsApp chat export (text, **photo**, **audio**, **video**) using **local Llama only** (Ollama).
+
+- **Text**: Chat transcript parsed and queried with Llama.
+- **Photos**: Described with Llama vision (`llama3.2-vision`) and included in answers.
+- **Audio/Video**: Listed by filename (metadata only; no transcription).
+
+```bash
+# Export a chat from WhatsApp (with or without media), then:
+python -m whatsapp_mcp path/to/WhatsApp_Chat.zip "What did we say about the project?"
+```
+
+See **`whatsapp_mcp/README.md`** for export format, setup (Ollama + llama3.2, llama3.2-vision), and API.

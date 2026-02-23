@@ -1,0 +1,3 @@
+# Face recognition (FaceNet) dependencies.
+# Use Python 3.11 or 3.12 — facenet-pytorch's Pillow constraint fails to build on Python 3.14.
+facenet-pytorch>=2.6

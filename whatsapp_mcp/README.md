@@ -5,6 +5,7 @@ Query your **WhatsApp export** (text, **photo**, **audio**, **video**) using **l
 - **Text**: Chat transcript is parsed and queried with Llama.
 - **Photos**: Described with **Llama vision** (e.g. `llama3.2-vision`) and included in context for questions.
 - **Audio / Video**: Listed by filename and type in the context (metadata only; no speech-to-text).
+- **Semantic search (optional)**: Use **ChromaDB** + Ollama embeddings (`nomic-embed-text`) for better retrieval over messages.
 
 ## Setup
 
@@ -16,23 +17,31 @@ Query your **WhatsApp export** (text, **photo**, **audio**, **video**) using **l
    ollama serve
    ollama run llama3.2
    ollama run llama3.2-vision   # for photo descriptions
+   ollama pull nomic-embed-text  # for ChromaDB semantic search (optional)
    ```
 
 3. **Env** (optional, in `.env`):  
-   `OLLAMA_HOST`, `LLAMA_MODEL`, `LLAMA_VISION_MODEL=llama3.2-vision`
+   `OLLAMA_HOST`, `LLAMA_MODEL`, `LLAMA_VISION_MODEL=llama3.2-vision`, `OLLAMA_EMBED_MODEL=nomic-embed-text`
 
-4. **Install**: `pip install ollama` (already in project `requirements.txt`).
+4. **Install**: `pip install -r requirements.txt` (adds `ollama`, `chromadb`).
+
+**Note:** ChromaDB (used for `--semantic`) does not yet support **Python 3.14** (Pydantic v1 compatibility). Use **Python 3.12 or 3.11** for semantic search, or run without `--semantic`.
 
 ## How to run and check
 
 **CLI (from project root):**
 
 ```bash
-# Point to a .zip, or to a folder that contains your export (e.g. store/)
-# If you pass a folder (e.g. store), the first .zip inside it is used.
+# Default: load export and ask Llama over full chat + photo descriptions
 python -m whatsapp_mcp store "What did we decide about the meeting?"
+
+# Semantic search (ChromaDB + Ollama nomic-embed-text): retrieves relevant messages then asks Llama
+python -m whatsapp_mcp store "What did we say about homework?" --semantic
+
+# Rebuild the Chroma index (e.g. after adding more messages to the export)
+python -m whatsapp_mcp store "Summarize the chat" --semantic --rebuild
+
 python -m whatsapp_mcp store/whatsaap-chinease-teacher.zip "Summarize this chat"
-python -m whatsapp_mcp path/to/chat_folder "List all photos mentioned in the chat"
 ```
 
 **In code:**
@@ -65,6 +74,16 @@ print(answer)
 Chat lines are expected in a form like:  
 `[DD/MM/YYYY, HH:MM PM] Name: message` or `DD/MM/YYYY, HH:MM PM - Name: message`.
 
+## ChromaDB semantic search (local only)
+
+For better retrieval over long chats, use **ChromaDB** with **Ollama** embeddings (`nomic-embed-text`). Run `ollama pull nomic-embed-text`, then:
+
+```bash
+python -m whatsapp_mcp store "Your question" --semantic
+```
+
+In code: `build_index(export_path)` then `semantic_query(export_path, question)`. Pass `persist_dir=".chroma_whatsapp"` to persist the index on disk.
+
 ## API
 
 - **`load_export(export_path)`** → `(messages, media_files, chat_folder)`
@@ -72,5 +91,7 @@ Chat lines are expected in a form like:
 - **`query_image(image_path, question="...", config=None)`** → answer (Llama vision)
 - **`describe_photos(media, config=None, max_photos=50)`** → list of `(filename, description)`
 - **`query_all(export_path, question, include_photo_descriptions=True, max_photos_to_describe=20)`** → one answer over chat + photo descriptions + audio/video list
+- **`build_index(export_path, persist_dir=None, ...)`** → build ChromaDB index (Ollama nomic-embed-text)
+- **`semantic_query(export_path, question, n_results=10, rebuild=False)`** → ChromaDB retrieval + Llama answer
 
 Audio/video content is not transcribed (metadata only). For speech in audio/video you’d need a separate step (e.g. Whisper) and then add that text to the context.

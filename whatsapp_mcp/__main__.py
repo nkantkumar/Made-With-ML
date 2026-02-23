@@ -2,7 +2,7 @@
 import sys
 from pathlib import Path
 
-from whatsapp_mcp import query_all
+from whatsapp_mcp import query_all, semantic_query
 
 
 def _resolve_export_path(path: Path) -> Path:
@@ -29,7 +29,8 @@ def main() -> None:
         print("  Example: python -m whatsapp_mcp store \"What did we say about the meeting?\"", file=sys.stderr)
         sys.exit(1)
     export_path = Path(sys.argv[1])
-    question = " ".join(sys.argv[2:]).strip()
+    rest = [a for a in sys.argv[2:] if a not in ("--semantic", "--rebuild")]
+    question = " ".join(rest).strip()
     if not question:
         print("Provide a question in quotes.", file=sys.stderr)
         sys.exit(1)
@@ -37,10 +38,17 @@ def main() -> None:
         print(f"Not found: {export_path}", file=sys.stderr)
         sys.exit(1)
     export_path = _resolve_export_path(export_path)
+    use_semantic = "--semantic" in sys.argv
+    rebuild = "--rebuild" in sys.argv
+
     if export_path.is_file() and export_path.suffix.lower() == ".zip":
         print(f"Using export: {export_path}", file=sys.stderr)
-    print("Loading export and querying with Llama...", file=sys.stderr)
-    answer = query_all(export_path, question, include_photo_descriptions=True, max_photos_to_describe=15)
+    if use_semantic:
+        print("Using ChromaDB semantic search (Ollama embeddings)...", file=sys.stderr)
+        answer = semantic_query(export_path, question, n_results=12, rebuild=rebuild)
+    else:
+        print("Loading export and querying with Llama...", file=sys.stderr)
+        answer = query_all(export_path, question, include_photo_descriptions=True, max_photos_to_describe=15)
     print(answer)
 
 
